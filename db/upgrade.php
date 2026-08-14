@@ -33,10 +33,10 @@ defined('MOODLE_INTERNAL') || die();
 function xmldb_local_bibliotech_upgrade($oldversion) {
     global $DB;
 
-    if ($oldversion < 2026081301) {
-        // Sync LTI tool configuration on upgrade.
+    if ($oldversion < 2026081302) {
+        // Re-sync LTI tool configuration with correct keytype definition.
         \local_bibliotech\lti_manager::sync_lti_tool();
-        upgrade_plugin_savepoint(true, 2026081301, 'local', 'bibliotech');
+        upgrade_plugin_savepoint(true, 2026081302, 'local', 'bibliotech');
     }
 
     return true;

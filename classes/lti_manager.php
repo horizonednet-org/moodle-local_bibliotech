@@ -77,7 +77,7 @@ class lti_manager {
         $config->lti_description = get_string('tool_description', 'local_bibliotech');
         $config->lti_ltiversion = '1.3.0';
         $config->lti_clientid = $clientid;
-        $config->lti_keytype = 'JWKS_KEYSET';
+        $config->lti_keytype = LTI_JWK_KEYSET;
         $config->lti_publickeyset = $fullpublickeyset;
         $config->lti_initiatelogin = $fullinitiatelogin;
         $config->lti_redirectionuris = $fullredirectionuris;
