@@ -36,6 +36,7 @@ $string['subscribe_now_button'] = 'Subscribe Now';
 $string['subscription_required_notice'] = 'Bibliotech Subscription Required';
 $string['select_content'] = 'Select Bibliotech Resource';
 $string['access_denied'] = 'You do not have active access to Bibliotech resources.';
+$string['bibliotech:manage'] = 'Manage Bibliotech subscriptions and configuration';
 
 // Admin Settings strings.
 $string['setting_base_url'] = 'Base API URL';

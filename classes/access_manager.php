@@ -68,4 +68,15 @@ class access_manager {
 
         return !empty($val);
     }
+
+    /**
+     * Checks if the given user (or current user) has capability to manage Bibliotech subscriber status.
+     *
+     * @param int|null $userid User ID to check, or null for current global $USER.
+     * @return bool True if authorized to manage, false otherwise.
+     */
+    public static function can_manage(?int $userid = null): bool {
+        $context = \context_system::instance();
+        return has_capability('local/bibliotech:manage', $context, $userid);
+    }
 }
