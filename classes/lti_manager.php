@@ -60,7 +60,7 @@ class lti_manager {
         $fullredirectionuris = (strpos($redirectionuris, 'http') === 0) ? $redirectionuris : rtrim($baseurl, '/') . '/' . ltrim($redirectionuris, '/');
         $fullcontentselection = (strpos($contentselection, 'http') === 0) ? $contentselection : rtrim($baseurl, '/') . '/' . ltrim($contentselection, '/');
 
-        // Look up existing type record by name.
+        // Look up existing type record strictly by name 'Bibliotech'.
         $existing = $DB->get_record('lti_types', ['name' => self::TOOL_NAME]);
 
         $type = new \stdClass();

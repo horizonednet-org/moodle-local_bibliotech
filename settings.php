@@ -110,8 +110,8 @@ if ($hassiteconfig) {
 
     $ADMIN->add('localplugins', $settings);
 
-    // Sync LTI tool configuration if setting form was just submitted.
-    if (defined('ADMIN_THISSAVE') && ADMIN_THISSAVE) {
+    // Sync LTI tool configuration if plugin is configured.
+    if (!empty(get_config('local_bibliotech', 'base_url')) && !empty(get_config('local_bibliotech', 'client_id'))) {
         \local_bibliotech\lti_manager::sync_lti_tool();
     }
 }

@@ -25,8 +25,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026081300;
-$plugin->requires  = 2024100700;
+$plugin->version = 2026081301;
+$plugin->requires = 2024100700;
 $plugin->component = 'local_bibliotech';
-$plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '0.1.0';
+$plugin->maturity = MATURITY_BETA;
+$plugin->release = '0.1.1';
