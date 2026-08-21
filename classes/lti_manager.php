@@ -83,7 +83,7 @@ class lti_manager {
         $config->lti_redirectionuris = $fullredirectionuris;
         $config->lti_customparameters = $customparams;
         $config->lti_coursevisible = LTI_COURSEVISIBLE_ACTIVITYCHOOSER;
-        $config->lti_launchcontainer = LTI_LAUNCH_CONTAINER_EMBED;
+        $config->lti_launchcontainer = LTI_LAUNCH_CONTAINER_EMBED_NO_BLOCKS;
         $config->lti_contentitem = 1;
         $config->lti_deeplinkingurl = $fullcontentselection;
         $config->lti_icon = 'https://storage.googleapis.com/bibliotech-thumbnail/BiblioTech.png';

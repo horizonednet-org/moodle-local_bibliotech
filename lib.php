@@ -24,4 +24,13 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * Callback before footer to initialize LTI viewer sizing on mod_lti view page.
+ */
+function local_bibliotech_before_footer() {
+    global $PAGE;
 
+    if ($PAGE->pagetype === 'mod-lti-view') {
+        $PAGE->requires->js_call_amd('local_bibliotech/lti_viewer', 'init');
+    }
+}
