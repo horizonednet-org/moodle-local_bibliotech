@@ -14,13 +14,29 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace local_bibliotech;
+
+use core\hook\output\before_footer_html_generation;
+
 /**
- * Library callbacks for local_bibliotech.
+ * Hook callbacks for local_bibliotech.
  *
  * @package    local_bibliotech
  * @copyright  2026 Trevor McCready, Horizon Education Network <https://www.horizonednet.org>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+class hook_callbacks {
 
-defined('MOODLE_INTERNAL') || die();
+    /**
+     * Callback before footer HTML generation to initialize LTI viewer sizing on mod_lti view page.
+     *
+     * @param before_footer_html_generation $hook
+     */
+    public static function before_footer_html_generation(before_footer_html_generation $hook): void {
+        global $PAGE;
 
+        if ($PAGE->pagetype === 'mod-lti-view') {
+            $PAGE->requires->js_call_amd('local_bibliotech/lti_viewer', 'init');
+        }
+    }
+}

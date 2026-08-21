@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Library callbacks for local_bibliotech.
+ * Hook callbacks for local_bibliotech.
  *
  * @package    local_bibliotech
  * @copyright  2026 Trevor McCready, Horizon Education Network <https://www.horizonednet.org>
@@ -24,3 +24,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$callbacks = [
+    [
+        'hook' => \core\hook\output\before_footer_html_generation::class,
+        'callback' => \local_bibliotech\hook_callbacks::class . '::before_footer_html_generation',
+        'priority' => 0,
+    ],
+];
