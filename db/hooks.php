@@ -30,4 +30,14 @@ $callbacks = [
         'callback' => \local_bibliotech\hook_callbacks::class . '::before_footer_html_generation',
         'priority' => 0,
     ],
+    [
+        'hook' => \core\hook\output\before_http_headers::class,
+        'callback' => \local_bibliotech\hook_callbacks::class . '::before_http_headers',
+        'priority' => 0,
+    ],
+    [
+        'hook' => \core\hook\after_config::class,
+        'callback' => \local_bibliotech\hook_callbacks::class . '::after_config',
+        'priority' => 0,
+    ],
 ];

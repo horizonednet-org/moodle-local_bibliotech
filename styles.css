@@ -13,3 +13,73 @@
 .path-mod-lti #page-content {
     padding-bottom: 2rem;
 }
+
+/* Hide individual Bibliotech subscription toggle on profile edit forms */
+.path-user #fitem_id_profile_field_bibliotech_subscriber {
+    display: none !important;
+}
+
+/* Bibliotech restricted course module styling for unsubscribed users */
+.bibliotech-restricted-cm {
+    opacity: 0.65;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.bibliotech-restricted-cm:hover {
+    opacity: 0.85;
+}
+
+.bibliotech-restricted-cm a.aal_test,
+.bibliotech-restricted-cm .activityinstance > a,
+.bibliotech-restricted-cm .activity-item a.aal_test {
+    cursor: not-allowed;
+    color: #6c757d !important;
+}
+
+.bibliotech-cm-restriction-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    line-height: 1.3;
+}
+
+.bibliotech-cm-restriction-badge .badge {
+    font-size: 0.75rem;
+    padding: 0.3em 0.6em;
+    font-weight: 600;
+}
+
+.bibliotech-cm-subscribe-link {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background-color: #f59e0b;
+    color: #111827 !important;
+    text-decoration: none !important;
+    border: 1px solid #d97706;
+}
+
+.bibliotech-cm-subscribe-link:hover {
+    background-color: #d97706;
+    color: #ffffff !important;
+}
+
+/* Unauthorized LTI page notice */
+.bibliotech-unauthorized-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    text-align: center;
+}
+
+.bibliotech-unauthorized-container h4 {
+    color: #343a40;
+    margin-bottom: 1rem;
+}
+

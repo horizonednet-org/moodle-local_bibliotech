@@ -45,5 +45,11 @@ function xmldb_local_bibliotech_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026081400, 'local', 'bibliotech');
     }
 
+    if ($oldversion < 2026091100) {
+        // Set bibliotech_subscriber custom profile field to visible = 0 (hidden from user profiles).
+        $DB->set_field('user_info_field', 'visible', 0, ['shortname' => 'bibliotech_subscriber']);
+        upgrade_plugin_savepoint(true, 2026091100, 'local', 'bibliotech');
+    }
+
     return true;
 }

@@ -57,3 +57,17 @@ $string['setting_profile_field'] = 'User Profile Field Shortname';
 $string['setting_profile_field_desc'] = 'The shortname of the custom user profile field controlling Bibliotech access.';
 $string['setting_subscribe_url'] = 'Subscribe Page URL';
 $string['setting_subscribe_url_desc'] = 'The public web page URL where users can purchase a subscription to Bibliotech.';
+$string['setting_unsubscribed_cm_display'] = 'Unsubscribed Course Resource Display';
+$string['setting_unsubscribed_cm_display_desc'] = 'How Bibliotech LTI activities should appear on course pages for users without an active Bibliotech subscription.';
+$string['unsubscribed_cm_display_grayout'] = 'Gray out with subscription notice (recommended)';
+$string['unsubscribed_cm_display_hide'] = 'Hide completely from course page';
+
+// Course module restriction strings.
+$string['cm_subscription_required'] = 'Bibliotech Subscription Required';
+$string['cm_not_available_online'] = 'Not available online';
+$string['cm_modal_title'] = 'Bibliotech Subscription Required';
+$string['cm_modal_body'] = 'Access to this resource requires an active Bibliotech subscription. Please subscribe to unlock full online reading access.';
+$string['unauthorized_lti_heading'] = 'Bibliotech Subscription Required';
+$string['unauthorized_lti_message'] = 'You need an active Bibliotech subscription to view this digital publication online. Subscriptions can be acquired individually or through your affiliated organization.';
+$string['return_to_course'] = 'Return to Course';
+

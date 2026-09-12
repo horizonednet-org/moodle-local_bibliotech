@@ -52,8 +52,8 @@ function xmldb_local_bibliotech_install() {
         $field->categoryid = $categoryid;
         $field->sortorder = 1;
         $field->required = 0;
-        $field->locked = 1; // Locked so only administrators or users with local/bibliotech:manage capability can modify.
-        $field->visible = 2; // Visible to user.
+        $field->locked = 1; // Locked: managed automatically by organization subscriptions.
+        $field->visible = 0; // Not visible directly on user profile.
         $field->forceunique = 0;
         $field->signup = 0;
         $field->defaultdata = 0; // Default unchecked (0).
@@ -63,8 +63,13 @@ function xmldb_local_bibliotech_install() {
         $field->param4 = '';
         $field->param5 = '';
         $DB->insert_record('user_info_field', $field);
-    } else if (empty($field->locked)) {
-        $DB->set_field('user_info_field', 'locked', 1, ['id' => $field->id]);
+    } else {
+        if (empty($field->locked)) {
+            $DB->set_field('user_info_field', 'locked', 1, ['id' => $field->id]);
+        }
+        if ($field->visible != 0) {
+            $DB->set_field('user_info_field', 'visible', 0, ['id' => $field->id]);
+        }
     }
 
     // 3. Provision the pre-configured LTI tool type.

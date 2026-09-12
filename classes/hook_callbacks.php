@@ -17,6 +17,8 @@
 namespace local_bibliotech;
 
 use core\hook\output\before_footer_html_generation;
+use core\hook\output\before_http_headers;
+use core\hook\after_config;
 
 /**
  * Hook callbacks for local_bibliotech.
@@ -28,7 +30,76 @@ use core\hook\output\before_footer_html_generation;
 class hook_callbacks {
 
     /**
-     * Callback before footer HTML generation to initialize LTI viewer sizing on mod_lti view page.
+     * Intercepts direct /mod/lti/launch.php requests early to prevent unauthorized LTI launches.
+     *
+     * @param after_config $hook
+     */
+    public static function after_config(after_config $hook): void {
+        global $CFG, $DB;
+
+        $script = $_SERVER['SCRIPT_NAME'] ?? '';
+        if (strpos($script, '/mod/lti/launch.php') !== false) {
+            $cmid = optional_param('id', 0, PARAM_INT);
+            if ($cmid && isloggedin() && !isguestuser()) {
+                require_once($CFG->dirroot . '/course/lib.php');
+                $cm = get_coursemodule_from_id('lti', $cmid, 0, false, IGNORE_MISSING);
+                if ($cm && self::is_bibliotech_lti($cm)) {
+                    if (!\local_bibliotech\access_manager::has_access()) {
+                        print_error('access_denied', 'local_bibliotech');
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Intercepts /mod/lti/view.php before headers to block unsubscribed access with a friendly subscription notice.
+     *
+     * @param before_http_headers $hook
+     */
+    public static function before_http_headers(before_http_headers $hook): void {
+        global $PAGE, $OUTPUT;
+
+        if ($PAGE->pagetype === 'mod-lti-view') {
+            $cm = $PAGE->cm;
+            if ($cm && self::is_bibliotech_lti($cm)) {
+                if (!\local_bibliotech\access_manager::has_access()) {
+                    $subscribeurl = get_config('local_bibliotech', 'subscribe_url') ?: 'https://bibliotechsl.com/subscribe/';
+                    $heading = get_string('unauthorized_lti_heading', 'local_bibliotech');
+                    $message = get_string('unauthorized_lti_message', 'local_bibliotech');
+                    $subtext = get_string('subscribe_now_button', 'local_bibliotech');
+                    $returncourse = get_string('return_to_course', 'local_bibliotech');
+                    $courseid = !empty($PAGE->course->id) ? $PAGE->course->id : SITEID;
+                    $courseurl = new \moodle_url('/course/view.php', ['id' => $courseid]);
+
+                    $content = \html_writer::start_div('bibliotech-unauthorized-container shadow-sm');
+                    $content .= \html_writer::tag('div', '🔒', ['style' => 'font-size: 3rem; margin-bottom: 1rem;']);
+                    $content .= \html_writer::tag('h4', s($heading), ['class' => 'font-weight-bold text-dark']);
+                    $content .= \html_writer::tag('p', s($message), ['class' => 'text-muted mb-4']);
+                    $content .= \html_writer::start_div('d-flex justify-content-center gap-2');
+                    $content .= \html_writer::tag('a', s($subtext) . ' <i class="fa fa-external-link ml-1"></i>', [
+                        'href' => $subscribeurl,
+                        'class' => 'btn btn-warning font-weight-bold mr-2',
+                        'target' => '_blank'
+                    ]);
+                    $content .= \html_writer::tag('a', s($returncourse), [
+                        'href' => $courseurl,
+                        'class' => 'btn btn-outline-secondary'
+                    ]);
+                    $content .= \html_writer::end_div();
+                    $content .= \html_writer::end_div();
+
+                    echo $OUTPUT->header();
+                    echo $content;
+                    echo $OUTPUT->footer();
+                    exit;
+                }
+            }
+        }
+    }
+
+    /**
+     * Callback before footer HTML generation to initialize LTI viewer sizing or course view restrictions.
      *
      * @param before_footer_html_generation $hook
      */
@@ -37,6 +108,99 @@ class hook_callbacks {
 
         if ($PAGE->pagetype === 'mod-lti-view') {
             $PAGE->requires->js_call_amd('local_bibliotech/lti_viewer', 'init');
+        } else if (strpos($PAGE->pagetype, 'course-view-') === 0 && !empty($PAGE->course->id)) {
+            $hasaccess = \local_bibliotech\access_manager::has_access();
+            if (!$hasaccess) {
+                $cmids = self::get_course_bibliotech_cmids((int)$PAGE->course->id);
+                if (!empty($cmids)) {
+                    $displaymode = get_config('local_bibliotech', 'unsubscribed_cm_display') ?: 'grayout';
+                    $subscribeurl = get_config('local_bibliotech', 'subscribe_url') ?: 'https://bibliotechsl.com/subscribe/';
+                    $strings = [
+                        'subNotice' => get_string('cm_subscription_required', 'local_bibliotech'),
+                        'notAvailable' => get_string('cm_not_available_online', 'local_bibliotech'),
+                        'subscribeNow' => get_string('subscribe_now_button', 'local_bibliotech'),
+                        'modalTitle' => get_string('cm_modal_title', 'local_bibliotech'),
+                        'modalBody' => get_string('cm_modal_body', 'local_bibliotech'),
+                    ];
+                    $PAGE->requires->js_call_amd('local_bibliotech/course_view', 'init', [
+                        $cmids,
+                        $displaymode,
+                        $subscribeurl,
+                        $strings
+                    ]);
+                }
+            }
         }
+    }
+
+    /**
+     * Checks whether a course module represents a Bibliotech LTI tool.
+     *
+     * @param \cm_info|\stdClass $cm The course module.
+     * @return bool
+     */
+    public static function is_bibliotech_lti($cm): bool {
+        global $DB;
+
+        if (!$cm || empty($cm->modname) || $cm->modname !== 'lti') {
+            return false;
+        }
+
+        $lti = $DB->get_record('lti', ['id' => $cm->instance], 'id, typeid, toolurl', IGNORE_MISSING);
+        if (!$lti) {
+            return false;
+        }
+
+        $bibliotechtypeid = \local_bibliotech\lti_manager::get_type_id();
+        if ($bibliotechtypeid && (int)$lti->typeid === (int)$bibliotechtypeid) {
+            return true;
+        }
+
+        $baseurl = get_config('local_bibliotech', 'base_url');
+        if (!empty($baseurl) && !empty($lti->toolurl) && strpos($lti->toolurl, $baseurl) !== false) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Retrieves all Bibliotech LTI course module IDs for a given course.
+     *
+     * @param int $courseid Course ID.
+     * @return array Array of integer cm IDs.
+     */
+    public static function get_course_bibliotech_cmids(int $courseid): array {
+        global $DB;
+
+        $bibliotechtypeid = \local_bibliotech\lti_manager::get_type_id();
+        $baseurl = get_config('local_bibliotech', 'base_url');
+
+        $where = "cm.course = :courseid AND m.name = 'lti'";
+        $params = ['courseid' => $courseid];
+
+        $conditions = [];
+        if ($bibliotechtypeid) {
+            $conditions[] = "l.typeid = :typeid";
+            $params['typeid'] = $bibliotechtypeid;
+        }
+        if (!empty($baseurl)) {
+            $conditions[] = $DB->sql_like('l.toolurl', ':baseurl');
+            $params['baseurl'] = '%' . $baseurl . '%';
+        }
+
+        if (empty($conditions)) {
+            return [];
+        }
+
+        $where .= " AND (" . implode(" OR ", $conditions) . ")";
+
+        $sql = "SELECT cm.id
+                  FROM {course_modules} cm
+                  JOIN {modules} m ON m.id = cm.module
+                  JOIN {lti} l ON l.id = cm.instance
+                 WHERE $where";
+
+        return array_map('intval', array_keys($DB->get_records_sql($sql, $params)));
     }
 }

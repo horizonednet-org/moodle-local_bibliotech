@@ -108,6 +108,18 @@ if ($hassiteconfig) {
         PARAM_URL
     ));
 
+    // Unsubscribed Course Resource Display.
+    $settings->add(new admin_setting_configselect(
+        'local_bibliotech/unsubscribed_cm_display',
+        get_string('setting_unsubscribed_cm_display', 'local_bibliotech'),
+        get_string('setting_unsubscribed_cm_display_desc', 'local_bibliotech'),
+        'grayout',
+        [
+            'grayout' => get_string('unsubscribed_cm_display_grayout', 'local_bibliotech'),
+            'hide' => get_string('unsubscribed_cm_display_hide', 'local_bibliotech'),
+        ]
+    ));
+
     $ADMIN->add('localplugins', $settings);
 
     // Sync LTI tool configuration if plugin is configured.
