@@ -33,9 +33,10 @@ if (!class_exists('\local_bibliotech\access_manager') || !\local_bibliotech\acce
     print_error('access_denied', 'local_bibliotech');
 }
 
-$id = required_param('id', PARAM_RAW); // publication_id or UUID
+$id = optional_param('id', '', PARAM_RAW); // publication_id or UUID
 $courseid = optional_param('course', SITEID, PARAM_INT);
-$title = optional_param('title', 'Bibliotech Publication', PARAM_TEXT);
+$defaulttitle = !empty($id) ? 'Bibliotech Publication' : get_string('bibliotech_library', 'local_bibliotech');
+$title = optional_param('title', $defaulttitle, PARAM_TEXT);
 
 $typeid = \local_bibliotech\lti_manager::get_type_id();
 $config = lti_get_type_type_config($typeid);
@@ -53,7 +54,11 @@ $instance->intro = '';
 $instance->introformat = FORMAT_HTML;
 $instance->toolurl = $config->lti_toolurl ?? '';
 $instance->securetoolurl = $config->lti_toolurl ?? '';
-$instance->instructorcustomparameters = "publication_id={$id}";
+if (!empty($id)) {
+    $instance->instructorcustomparameters = "publication_id={$id}";
+} else {
+    $instance->instructorcustomparameters = '';
+}
 $instance->servicesalt = 'local_bibliotech';
 
 // Initiate authenticated LTI 1.3 launch request.
