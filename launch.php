@@ -44,27 +44,51 @@ if (!$config) {
     print_error('cannotfindtool', 'mod_lti');
 }
 
-// Construct LTI instance for authenticated LTI 1.3 launch request.
-$instance = new stdClass();
-$instance->id = 0;
-$instance->typeid = $typeid;
-$instance->course = $courseid;
-$instance->name = $title;
-$instance->intro = '';
-$instance->introformat = FORMAT_HTML;
-$instance->toolurl = $config->lti_toolurl ?? '';
-$instance->securetoolurl = $config->lti_toolurl ?? '';
-if (!empty($id)) {
-    $instance->instructorcustomparameters = "publication_id={$id}";
-} else {
-    $instance->instructorcustomparameters = '';
-}
-$instance->servicesalt = 'local_bibliotech';
+// Generate unique launch ID for session tracking.
+$launchid = 'ltilaunch_bt_' . bin2hex(random_bytes(16));
 
-// Initiate authenticated LTI 1.3 launch request.
-if (!isset($SESSION->lti_initiatelogin_status)) {
-    echo lti_initiate_login($courseid, 0, $instance, $config, 'basic-lti-launch-request', $title, '', 0);
-    exit;
-} else {
-    unset($SESSION->lti_initiatelogin_status);
+if (!isset($SESSION->local_bibliotech_launches)) {
+    $SESSION->local_bibliotech_launches = [];
 }
+$SESSION->local_bibliotech_launches[$launchid] = [
+    'id' => $id,
+    'title' => $title,
+    'courseid' => $courseid,
+    'typeid' => $typeid,
+    'time' => time(),
+];
+
+// Clean up stale launch entries older than 1 hour.
+foreach ($SESSION->local_bibliotech_launches as $lid => $linfo) {
+    if (time() - ($linfo['time'] ?? 0) > 3600) {
+        unset($SESSION->local_bibliotech_launches[$lid]);
+    }
+}
+
+// Prepare OIDC login initiation parameters for Bibliotech.
+$endpoint = $config->lti_toolurl ?? '';
+$ltihint = [
+    'cmid' => 0,
+    'launchid' => $launchid,
+];
+$params = [
+    'iss' => $CFG->wwwroot,
+    'target_link_uri' => $endpoint,
+    'login_hint' => (string)$USER->id,
+    'lti_message_hint' => json_encode($ltihint),
+    'client_id' => $config->lti_clientid,
+    'lti_deployment_id' => (string)$config->typeid,
+];
+
+// Output auto-submitting login initiation form to Bibliotech.
+$r = "<form action=\"" . s($config->lti_initiatelogin) . "\" name=\"ltiInitiateLoginForm\" id=\"ltiInitiateLoginForm\" method=\"post\" encType=\"application/x-www-form-urlencoded\">\n";
+foreach ($params as $key => $value) {
+    $r .= "  <input type=\"hidden\" name=\"" . s($key) . "\" value=\"" . s($value) . "\"/>\n";
+}
+$r .= "</form>\n";
+$r .= "<script type=\"text/javascript\">\n";
+$r .= "  document.ltiInitiateLoginForm.submit();\n";
+$r .= "</script>\n";
+
+echo $r;
+exit;

@@ -35,7 +35,7 @@ class hook_callbacks {
      * @param after_config $hook
      */
     public static function after_config(after_config $hook): void {
-        global $CFG, $DB;
+        global $CFG, $DB, $SESSION;
 
         $script = $_SERVER['SCRIPT_NAME'] ?? '';
         if (strpos($script, '/mod/lti/launch.php') !== false) {
@@ -49,7 +49,102 @@ class hook_callbacks {
                     }
                 }
             }
+        } else if (strpos($script, '/mod/lti/auth.php') !== false) {
+            $ltimessagehintenc = optional_param('lti_message_hint', '', PARAM_RAW);
+            if (!empty($ltimessagehintenc)) {
+                $ltimessagehint = json_decode($ltimessagehintenc);
+                $launchid = $ltimessagehint->launchid ?? '';
+                if (!empty($launchid) && !empty($SESSION->local_bibliotech_launches[$launchid])) {
+                    $launchinfo = $SESSION->local_bibliotech_launches[$launchid];
+                    unset($SESSION->local_bibliotech_launches[$launchid]);
+                    self::handle_bibliotech_auth_launch($launchinfo);
+                    exit;
+                }
+            }
         }
+    }
+
+    /**
+     * Handles LTI 1.3 authentication request callback for Bibliotech direct publication launches.
+     * Generates a signed LtiResourceLinkRequest JWT and submits it directly to Bibliotech's launch endpoint.
+     *
+     * @param array $launchinfo Information about the launch stored during launch.php.
+     */
+    public static function handle_bibliotech_auth_launch(array $launchinfo): void {
+        global $CFG, $DB, $USER, $PAGE;
+        require_once($CFG->dirroot . '/mod/lti/locallib.php');
+
+        $clientid = optional_param('client_id', '', PARAM_TEXT);
+        $redirecturi = optional_param('redirect_uri', '', PARAM_URL);
+        $loginhint = optional_param('login_hint', '', PARAM_TEXT);
+        $state = optional_param('state', '', PARAM_TEXT);
+        $nonce = optional_param('nonce', '', PARAM_TEXT);
+
+        $typeid = (int)($launchinfo['typeid'] ?? 0);
+        $config = lti_get_type_type_config($typeid);
+        if (!$config || $clientid !== $config->lti_clientid) {
+            throw new \moodle_exception('invalidrequest', 'error');
+        }
+
+        $uris = array_map("trim", explode("\n", $config->lti_redirectionuris));
+        if (!in_array($redirecturi, $uris)) {
+            throw new \moodle_exception('invalidrequest', 'error');
+        }
+
+        if ((string)$loginhint !== (string)$USER->id) {
+            throw new \moodle_exception('access_denied', 'local_bibliotech');
+        }
+
+        $courseid = (int)($launchinfo['courseid'] ?? SITEID);
+        $course = $DB->get_record('course', ['id' => $courseid]);
+        if (!$course) {
+            $course = get_site();
+        }
+        $PAGE->set_course($course);
+
+        $pubid = $launchinfo['id'] ?? '';
+        $title = $launchinfo['title'] ?? 'Bibliotech';
+
+        $instance = new \stdClass();
+        $instance->id = 0;
+        $instance->typeid = $typeid;
+        $instance->course = $course->id;
+        $instance->name = $title;
+        $instance->intro = '';
+        $instance->introformat = FORMAT_HTML;
+        $instance->toolurl = $config->lti_toolurl ?? '';
+        $instance->securetoolurl = $config->lti_toolurl ?? '';
+        $instance->instructorchoicesendname = 1;
+        $instance->instructorchoicesendemailaddr = 1;
+        $instance->instructorchoiceacceptgrades = 0;
+        $instance->instructorchoiceallowroster = 0;
+        $instance->resource_link_id = !empty($pubid) ? "bibliotech_pub_{$pubid}" : "bibliotech_library";
+        if (!empty($pubid)) {
+            $instance->instructorcustomparameters = "publication_id={$pubid}\nid={$pubid}\nuuid={$pubid}";
+        } else {
+            $instance->instructorcustomparameters = '';
+        }
+        $instance->servicesalt = 'local_bibliotech';
+
+        list($endpoint, $params) = lti_get_launch_data($instance, $nonce, 'basic-lti-launch-request');
+
+        $r = '<form action="' . s($redirecturi) . "\" name=\"ltiAuthForm\" id=\"ltiAuthForm\" " .
+             "method=\"post\" enctype=\"application/x-www-form-urlencoded\">\n";
+        if (!empty($params)) {
+            foreach ($params as $key => $value) {
+                $r .= "  <input type=\"hidden\" name=\"" . s($key) . "\" value=\"" . s($value) . "\"/>\n";
+            }
+        }
+        if (!empty($state)) {
+            $r .= "  <input type=\"hidden\" name=\"state\" value=\"" . s($state) . "\"/>\n";
+        }
+        $r .= "</form>\n";
+        $r .= "<script type=\"text/javascript\">\n";
+        $r .= "  document.ltiAuthForm.submit();\n";
+        $r .= "</script>\n";
+
+        echo $r;
+        exit;
     }
 
     /**
