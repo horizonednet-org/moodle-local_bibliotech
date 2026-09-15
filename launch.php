@@ -48,6 +48,10 @@ if (class_exists('\local_bibliotech\publication_resolver')) {
     $numericid = (int)$id;
 }
 
+if (empty($numericid) && empty($resolveduuid)) {
+    redirect('bibliotech://');
+}
+
 $courseid = optional_param('course', SITEID, PARAM_INT);
 $defaulttitle = (!empty($numericid) || !empty($resolveduuid)) ? 'Bibliotech Publication' : get_string('bibliotech_library', 'local_bibliotech');
 $title = optional_param('title', $defaulttitle, PARAM_TEXT);
