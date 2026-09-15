@@ -49,7 +49,7 @@ if (class_exists('\local_bibliotech\publication_resolver')) {
 }
 
 if (empty($numericid) && empty($resolveduuid)) {
-    redirect('bibliotech://');
+    redirect('bibliotech://bookshelf');
 }
 
 $courseid = optional_param('course', SITEID, PARAM_INT);
