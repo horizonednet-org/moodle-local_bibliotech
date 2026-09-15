@@ -102,7 +102,8 @@ class hook_callbacks {
         }
         $PAGE->set_course($course);
 
-        $pubid = $launchinfo['id'] ?? '';
+        $numericid = (int)($launchinfo['id'] ?? 0);
+        $uuid = $launchinfo['uuid'] ?? '';
         $title = $launchinfo['title'] ?? 'Bibliotech';
 
         $instance = new \stdClass();
@@ -112,18 +113,22 @@ class hook_callbacks {
         $instance->name = $title;
         $instance->intro = '';
         $instance->introformat = FORMAT_HTML;
-        $instance->toolurl = $config->lti_toolurl ?? '';
-        $instance->securetoolurl = $config->lti_toolurl ?? '';
+        $instance->toolurl = $redirecturi;
+        $instance->securetoolurl = $redirecturi;
         $instance->instructorchoicesendname = 1;
         $instance->instructorchoicesendemailaddr = 1;
         $instance->instructorchoiceacceptgrades = 0;
         $instance->instructorchoiceallowroster = 0;
-        $instance->resource_link_id = !empty($pubid) ? "bibliotech_pub_{$pubid}" : "bibliotech_library";
-        if (!empty($pubid)) {
-            $instance->instructorcustomparameters = "publication_id={$pubid}\nid={$pubid}\nuuid={$pubid}";
-        } else {
-            $instance->instructorcustomparameters = '';
+        $instance->resource_link_id = !empty($numericid) ? "bibliotech_pub_{$numericid}" : "bibliotech_library";
+
+        $customparams = [];
+        if (!empty($uuid)) {
+            $customparams[] = "uuid={$uuid}";
         }
+        if (!empty($numericid)) {
+            $customparams[] = "publication_id={$numericid}";
+        }
+        $instance->instructorcustomparameters = implode("\n", $customparams);
         $instance->servicesalt = 'local_bibliotech';
 
         list($endpoint, $params) = lti_get_launch_data($instance, $nonce, 'basic-lti-launch-request');

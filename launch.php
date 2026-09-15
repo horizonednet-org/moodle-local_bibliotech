@@ -34,8 +34,22 @@ if (!class_exists('\local_bibliotech\access_manager') || !\local_bibliotech\acce
 }
 
 $id = optional_param('id', '', PARAM_RAW); // publication_id or UUID
+$uuid = optional_param('uuid', '', PARAM_RAW);
+if (empty($id) && !empty($uuid)) {
+    $id = $uuid;
+}
+
+$numericid = 0;
+$resolveduuid = '';
+if (class_exists('\local_bibliotech\publication_resolver')) {
+    $numericid = \local_bibliotech\publication_resolver::resolve_id(!empty($id) ? $id : $uuid);
+    $resolveduuid = \local_bibliotech\publication_resolver::resolve_uuid(!empty($uuid) ? $uuid : $id);
+} else if (is_numeric($id)) {
+    $numericid = (int)$id;
+}
+
 $courseid = optional_param('course', SITEID, PARAM_INT);
-$defaulttitle = !empty($id) ? 'Bibliotech Publication' : get_string('bibliotech_library', 'local_bibliotech');
+$defaulttitle = (!empty($numericid) || !empty($resolveduuid)) ? 'Bibliotech Publication' : get_string('bibliotech_library', 'local_bibliotech');
 $title = optional_param('title', $defaulttitle, PARAM_TEXT);
 
 $typeid = \local_bibliotech\lti_manager::get_type_id();
@@ -51,7 +65,8 @@ if (!isset($SESSION->local_bibliotech_launches)) {
     $SESSION->local_bibliotech_launches = [];
 }
 $SESSION->local_bibliotech_launches[$launchid] = [
-    'id' => $id,
+    'id' => $numericid,
+    'uuid' => $resolveduuid,
     'title' => $title,
     'courseid' => $courseid,
     'typeid' => $typeid,
@@ -66,7 +81,9 @@ foreach ($SESSION->local_bibliotech_launches as $lid => $linfo) {
 }
 
 // Prepare OIDC login initiation parameters for Bibliotech.
-$endpoint = $config->lti_toolurl ?? '';
+$endpoint = !empty($config->lti_redirectionuris)
+    ? explode("\n", trim($config->lti_redirectionuris))[0]
+    : ($config->lti_toolurl ?? '');
 $ltihint = [
     'cmid' => 0,
     'launchid' => $launchid,
